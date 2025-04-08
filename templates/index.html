@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Virtual Painter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #282c36;
+            color: white;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #1e2128;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+        }
+
+        h1 { color: #ff4a57; }
+
+        ul { text-align: left; display: inline-block; }
+
+        .button {
+            background-color: #ff4a57;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px;
+            border-radius: 5px;
+        }
+
+        .button:hover { background-color: #e43e4b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Welcome to AI Virtual Painter!</h1>
+        <p>How to use:</p>
+        <ul>
+            <li>🖐️ Move your hand in front of the camera.</li>
+            <li>✏️ Use index finger to draw.</li>
+            <li>🎨 Use gestures to change colors.</li>
+            <li>✊ Close hand to erase.</li>
+        </ul>
+
+        <button class="button" onclick="startPainter()">🎨 Start Painting</button>
+        <button class="button" onclick="stopPainter()">🛑 Stop Painting</button>
+        <button class="button" onclick="exitPainter()">❌ Exit Virtual Painter</button>
+    </div>
+
+    <script>
+        function startPainter() {
+            fetch('/start')
+            .then(response => response.text())
+            .then(data => alert(data))
+            .catch(error => alert("Error starting AI Virtual Painter!"));
+        }
+
+        function stopPainter() {
+            fetch('/stop')
+            .then(response => response.text())
+            .then(data => alert(data))
+            .catch(error => alert("Error stopping AI Virtual Painter!"));
+        }
+
+        function exitPainter() {
+            fetch('/exit')
+            .then(response => response.text())
+            .then(data => alert(data))
+            .catch(error => alert("Error exiting AI Virtual Painter!"));
+        }
+    </script>
+</body>
+</html>
