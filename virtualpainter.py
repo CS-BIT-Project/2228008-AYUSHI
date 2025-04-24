@@ -1,112 +1,125 @@
 import cv2
 import time
-import HandTracingModule as htm
 import numpy as np
 import os
+import HandTracingModule as htm
 
-overlayList = []  # list to store all the images
-
-brushThickness = 25
+# Initialize variables
+brushThickness = 15
 eraserThickness = 100
-drawColor = (255, 0, 255)  # setting purple color
-
+drawColor = (244,184,218) # Default: Pink
 xp, yp = 0, 0
-imgCanvas = np.zeros((720, 1280, 3), np.uint8)  # defining canvas
+imgCanvas = np.zeros((720, 1280, 3), np.uint8)
+last_gesture_time = 0  # Initialize last gesture time
+gesture_debounce = 0.3  # Debounce time in seconds
+clear_gesture_time = 0  # Initialize clear gesture time
+selected_tool = 0  # Initialize selected tool (default to pink)
 
-# images in header folder
-folderPath = r"/Users/ayushi/PycharmProjects/PythonProject/Header"
-myList = os.listdir(folderPath)  # getting all the images used in code
-# print(myList)
-for imPath in myList:  # reading all the images from the folder
-    image = cv2.imread(f'{folderPath}/{imPath}')
-    overlayList.append(image)  # inserting images one by one in the overlayList
-header = overlayList[0]  # storing 1st image
+# Load and sort header images based on desired order
+folderPath = "Header"
+if not os.path.exists(folderPath):
+    print(f"❌ Folder {folderPath} not found!")
+    exit(1)
+overlayList = []
+desired_order = ['2_Pink.png', '1_blue.png', '0_Green.png', '3_BLack.png', '4_Eraser.png']  # Map to pink, blue, green, black, eraser
+for filename in desired_order:
+    img = cv2.imread(f'{folderPath}/{filename}')
+    if img is None:
+        print(f"❌ Failed to load {filename}, skipping...")
+        continue
+    overlayList.append(img)
+if len(overlayList) != len(desired_order):
+    print("❌ Not all header images loaded correctly!")
+    exit(1)
+header = overlayList[0]
+
+# Initialize webcam
 cap = cv2.VideoCapture(0)
-cap.set(3, 1280)  # width
-cap.set(4, 720)  # height
+if not cap.isOpened():
+    print("❌ Cannot open webcam!")
+    exit(1)
+cap.set(3, 1280)
+cap.set(4, 720)
 
-detector = htm.handDetector(detectionCon=0.50, maxHands=1)  # making object
+# Hand detector
+detector = htm.handDetector(detectionCon=0.75, maxHands=1)
 
 while True:
-
-    # 1. Import image
     success, img = cap.read()
-    img = cv2.flip(img, 1)  # for neglecting mirror inversion
+    if not success:
+        print("❌ Failed to read frame!")
+        break
+    img = cv2.flip(img, 1)
+    img = detector.findHands(img)
+    lmList = detector.findPosition(img, draw=False)
 
-    # 2. Find Hand Landmarks
-    img = detector.findHands(img)  # using functions fo connecting landmarks
-    lmList , bbox= detector.findPosition(img,draw=False)  # using function to find specific landmark position,draw false means no circles on landmarks
-
-    if len(lmList) != 0:
-        # print(lmList)
-        x1, y1 = lmList[8][1], lmList[8][2]  # tip of index finger
-        x2, y2 = lmList[12][1], lmList[12][2]  # tip of middle finger
-
-        # 3. Check which fingers are up
+    if lmList:
+        x1, y1 = lmList[8][1], lmList[8][2]  # Index finger tip
+        x2, y2 = lmList[12][1], lmList[12][2]  # Middle finger tip
         fingers = detector.fingersUp()
-        # print(fingers)
 
-        # 4. If Selection Mode - Two finger are up
-        if fingers[1] and fingers[2]:
+        # Selection Mode: Two fingers up
+        if fingers[1] and fingers[2] and (time.time() - last_gesture_time > gesture_debounce):
+            last_gesture_time = time.time()
             xp, yp = 0, 0
-            # print("Selection Mode")
-            # checking for click
-            if y1 < 125:
-                if 250 < x1 < 450:  # if i m clicking at purple brush
-                    header = overlayList[0]
-                    drawColor = (255, 0, 255)
-                elif 550 < x1 < 750:  # if i m clicking at blue brush
-                    header = overlayList[1]
-                    drawColor = (255, 0, 0)
-                elif 800 < x1 < 950:  # if i m clicking at green brush
-                    header = overlayList[2]
-                    drawColor = (0, 255, 0)
-                elif 1050 < x1 < 1200:  # if i m clicking at eraser
-                    header = overlayList[3]
-                    drawColor = (0, 0, 0)
-            cv2.rectangle(img, (x1, y1 - 25), (x2, y2 + 25), drawColor,
-                          cv2.FILLED)  # selection mode is represented as rectangle
+            if y1 < 125:  # Toolbar area
+                toolbar_width = 1280 // len(overlayList)
+                for i in range(len(overlayList)):
+                    start_x = i * toolbar_width
+                    end_x = (i + 1) * toolbar_width
+                    if start_x <= x1 < end_x:
+                        header = overlayList[i]
+                        print(f"Debug: x1={x1}, range=[{start_x}, {end_x}), selected index={i}")
+                        if i == 0:  # Pink
+                            drawColor = (244,184,218)
+                        elif i == 1:  # Blue
+                            drawColor = (255,0,0)
+                        elif i == 2:  # Green
+                            drawColor = (166, 219, 188)
+                        elif i == 3:  # Black
+                            drawColor = (128, 128, 128)  # Draw gray
+                        elif i == 4:  # Eraser
+                            drawColor = (255, 255, 255)  # White for selection
+                        selected_tool = i  # Update selected tool
+                        break
+            cv2.rectangle(img, (x1, y1 - 25), (x2, y2 + 25), drawColor, cv2.FILLED)
 
-        # 5. If Drawing Mode - Index finger is up
-        if fingers[1] and fingers[2] == False:
-            cv2.circle(img, (x1, y1), 15, drawColor, cv2.FILLED)  # drawing mode is represented as circle
-            # print("Drawing Mode")
-            if xp == 0 and yp == 0:  # initially xp and yp will be at 0,0 so it will draw a line from 0,0 to whichever point our tip is at
-                xp, yp = x1, y1  # so to avoid that we set xp=x1 and yp=y1
-            # till now we are creating our drawing but it gets removed as everytime our frames are updating so we have to define our canvas where we can draw and show also
+        # Drawing Mode: Only index finger up
+        if fingers[1] and not fingers[2]:
+            cv2.circle(img, (x1, y1), 15, drawColor, cv2.FILLED)
+            if xp == 0 and yp == 0:
+                xp, yp = x1, y1
+            # Use eraser thickness and black color for erasing when eraser is selected
+            thickness = eraserThickness if selected_tool == 4 else brushThickness
+            draw_color = (0, 0, 0) if selected_tool == 4 else drawColor  # Erase with black for eraser
+            cv2.line(img, (xp, yp), (x1, y1), draw_color, thickness)
+            cv2.line(imgCanvas, (xp, yp), (x1, y1), draw_color, thickness)
+            xp, yp = x1, y1
 
-            # eraser
-            if drawColor == (0, 0, 0):
-                cv2.line(img, (xp, yp), (x1, y1), drawColor, eraserThickness)
-                cv2.line(imgCanvas, (xp, yp), (x1, y1), drawColor, eraserThickness)
-            else:
-                cv2.line(img, (xp, yp), (x1, y1), drawColor,
-                         brushThickness)  # gonna draw lines from previous coodinates to new positions
-                cv2.line(imgCanvas, (xp, yp), (x1, y1), drawColor, brushThickness)
-            xp, yp = x1, y1  # giving values to xp,yp everytime
+        # Clear Canvas: All five fingers up with debounce
+        if fingers == [1, 1, 1, 1, 1] and (time.time() - clear_gesture_time > gesture_debounce):
+            clear_gesture_time = time.time()
+            imgCanvas = np.zeros((720, 1280, 3), np.uint8)
+            cv2.putText(img, "Canvas Cleared!", (400, 360), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 4)
+            print("🧼 Canvas cleared using 5-finger gesture")
 
-        # merging two windows into one imgcanvas and img
-
-    # 1 converting img to gray
+    # Process image layers
     imgGray = cv2.cvtColor(imgCanvas, cv2.COLOR_BGR2GRAY)
-
-    # 2 converting into binary image and thn inverting
-    _, imgInv = cv2.threshold(imgGray, 50, 255,
-                              cv2.THRESH_BINARY_INV)  # on canvas all the region in which we drew is black and where it is black it is cosidered as white,it will create a mask
-
-    imgInv = cv2.cvtColor(imgInv,
-                          cv2.COLOR_GRAY2BGR)  # converting again to gray bcoz we have to add in a RGB image i.e img
-
-    # add original img with imgInv ,by doing this we get our drawing only in black color
+    _, imgInv = cv2.threshold(imgGray, 50, 255, cv2.THRESH_BINARY_INV)
+    imgInv = cv2.cvtColor(imgInv, cv2.COLOR_GRAY2BGR)
     img = cv2.bitwise_and(img, imgInv)
-
-    # add img and imgcanvas,by doing this we get colors on img
     img = cv2.bitwise_or(img, imgCanvas)
 
-    # setting the header image
-    img[0:125, 0:1280] = header  # on our frame we are setting our JPG image acc to H,W of jpg images
+    # Set toolbar header
+    img[0:125, 0:1280] = header
 
-    cv2.imshow("Image", img)
-    # cv2.imshow("Canvas", imgCanvas)
-    # cv2.imshow("Inv", imgInv)
-    cv2.waitKey(1)
+    cv2.imshow("Virtual Painter", img)
+    key = cv2.waitKey(1)
+    if key == ord('s'):
+        cv2.imwrite(f"canvas_{int(time.time())}.png", imgCanvas)
+        print("✅ Canvas saved!")
+    if key == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
