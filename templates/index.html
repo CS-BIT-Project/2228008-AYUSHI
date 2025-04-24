@@ -2,80 +2,103 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Virtual Painter</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
+            background: #fceefc;
+            color: #444;
             text-align: center;
             padding: 50px;
-            background-color: #282c36;
-            color: white;
         }
 
         .container {
+            position: relative;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             max-width: 600px;
             margin: auto;
-            background: #1e2128;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+            z-index: 1;
+            overflow: hidden;
         }
 
-        h1 { color: #ff4a57; }
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("https://i.pinimg.com/736x/a1/e3/da/a1e3da65daa335ecab552d76d2843269.jpg");
+            background-size: cover;
+            background-position: center;
+            filter: blur(5px);
+            z-index: -1;
+        }
 
-        ul { text-align: left; display: inline-block; }
+        h1 {
+            color: #ff80ab;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            text-align: left;
+            margin-top: 20px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
 
         .button {
-            background-color: #ff4a57;
-            color: white;
-            padding: 15px 30px;
+            background-color: #ffb6c1;
             border: none;
+            color: white;
+            padding: 15px 25px;
+            font-size: 16px;
+            margin: 15px 10px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 18px;
-            margin: 10px;
-            border-radius: 5px;
         }
 
-        .button:hover { background-color: #e43e4b; }
+        .button:hover {
+            background-color: #ff80ab;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎨 Welcome to AI Virtual Painter!</h1>
-        <p>How to use:</p>
+        <p><strong>How to use:</strong></p>
         <ul>
-            <li>🖐️ Move your hand in front of the camera.</li>
-            <li>✏️ Use index finger to draw.</li>
-            <li>🎨 Use gestures to change colors.</li>
-            <li>✊ Close hand to erase.</li>
+            <li>🖐️ Show all 5 fingers to <strong>clear the canvas</strong>.</li>
+            <li>✌️ Use index + middle finger to <strong>switch colors or eraser</strong>.</li>
+            <li>☝️ Use a single index finger to <strong>draw</strong>.</li>
         </ul>
 
         <button class="button" onclick="startPainter()">🎨 Start Painting</button>
         <button class="button" onclick="stopPainter()">🛑 Stop Painting</button>
-        <button class="button" onclick="exitPainter()">❌ Exit Virtual Painter</button>
     </div>
 
     <script>
         function startPainter() {
             fetch('/start')
-            .then(response => response.text())
-            .then(data => alert(data))
-            .catch(error => alert("Error starting AI Virtual Painter!"));
+                .then(res => res.text())
+                .then(alert)
+                .catch(err => alert("Error: " + err));
         }
 
         function stopPainter() {
             fetch('/stop')
-            .then(response => response.text())
-            .then(data => alert(data))
-            .catch(error => alert("Error stopping AI Virtual Painter!"));
+                .then(res => res.text())
+                .then(alert)
+                .catch(err => alert("Error: " + err));
         }
 
         function exitPainter() {
             fetch('/exit')
-            .then(response => response.text())
-            .then(data => alert(data))
-            .catch(error => alert("Error exiting AI Virtual Painter!"));
+                .then(res => res.text())
+                .then(alert)
+                .catch(err => alert("Error: " + err));
         }
     </script>
 </body>
