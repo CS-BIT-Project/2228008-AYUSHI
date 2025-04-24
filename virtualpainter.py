@@ -16,7 +16,7 @@ clear_gesture_time = 0  # Initialize clear gesture time
 selected_tool = 0  # Initialize selected tool (default to pink)
 
 # Load and sort header images based on desired order
-folderPath = "Header"
+folderPath = "header_"
 if not os.path.exists(folderPath):
     print(f"❌ Folder {folderPath} not found!")
     exit(1)
